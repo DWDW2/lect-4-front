@@ -6,42 +6,48 @@ export const AddProduct = () => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState('');
+  const [image, setImage] = useState(null);
   const [category, setCategory] = useState('');
-  const [files, setFiles] = useState([]);
-  const [fileUrls, setFileUrls] = useState([]);
-  const [uploadProgress, setUploadProgress] = useState({});
-  const [status, setStatus] = useState('');
 
-  const handleFilesChange = (e) => {
-    const selectedFiles = Array.from(e.target.files);
-    setFiles(selectedFiles);
-    selectedFiles.forEach((file) => uploadFile(file));
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [status, setStatus] = useState('');
+  const [loadedBytes, setLoadedBytes] = useState<number | undefined>(0);
+  const [totalBytes, setTotalBytes] = useState<number>(0);
+  const [fileUrl, setFileUrl] = useState(null);
+
+  const handleImageChange = (e: any) => {
+    const file = e.target.files[0];
+    setImage(file);
+    uploadFile(file);
   };
 
-  const uploadFile = (file) => {
+  const uploadFile = (file: any) => {
     const formData = new FormData();
-    formData.append('file', file);
+    formData.append("file", file);
 
     axios.post('https://api.escuelajs.co/api/v1/files/upload', formData, {
       onUploadProgress: (progressEvent) => {
         const loaded = progressEvent.loaded;
         const total = progressEvent.total;
-        const percent = Math.round((loaded / total) * 100);
-        setUploadProgress((prevProgress) => ({
-          ...prevProgress,
-          [file.name]: percent,
-        }));
-        setStatus(`${file.name}: ${percent}% uploaded...`);
-      },
+      if (total !== undefined && loaded !== undefined) {
+        setLoadedBytes(loaded);
+        setTotalBytes(total);
+        const percent = (loaded / total) * 100;
+        setUploadProgress(Math.round(percent));
+        setStatus(Math.round(percent) + "% uploaded...");
+      }
+      }
     })
-      .then((response) => {
-        setStatus(`${file.name}: Upload successful!`);
-        setFileUrls((prevUrls) => [...prevUrls, response.data.location]);
-      })
-      .catch((error) => {
-        setStatus(`${file.name}: Upload failed!`);
-        console.error(error);
-      });
+    .then((response) => {
+      setStatus("Upload successful!");
+      setUploadProgress(100);
+      setFileUrl(response.data.location);
+      console.log(response.data);
+    })
+    .catch((error) => {
+      setStatus("Upload failed!");
+      console.error(error);
+    });
   };
 
   const handleSubmit = (e) => {
@@ -55,9 +61,8 @@ export const AddProduct = () => {
       description,
       price,
       category,
-      images: fileUrls, // Save the uploaded file URLs
-    };
-    // Save the data to local storage
+      image: fileUrl, 
+    }
     localStorage.setItem('productData', JSON.stringify(productData));
     console.log('Product data saved to local storage:', productData);
   };
@@ -127,27 +132,24 @@ export const AddProduct = () => {
           </div>
           <div className="mb-4">
             <label className="block text-gray-700 font-bold mb-2" htmlFor="image">
-              Images
+              Image
             </label>
             <input
               type="file"
               id="image"
               className="w-full px-3 py-2 border border-gray-300 rounded-md"
-              onChange={handleFilesChange}
-              multiple
+              onChange={handleImageChange}
               required
             />
           </div>
           <div className="file-uploader-container mb-4">
-            {files.map((file, index) => (
-              <div key={index}>
-                <label className="block text-gray-700 font-bold mb-2">
-                  {file.name} progress:
-                </label>
-                <progress value={uploadProgress[file.name]} max="100" className="w-full mb-2" />
-              </div>
-            ))}
+            <label className="block text-gray-700 font-bold mb-2">
+              File progress:
+            </label>
+            <progress value={uploadProgress} max="100" className="w-full mb-2" />
             <p>{status}</p>
+            <p>Uploaded {loadedBytes} bytes of {totalBytes}</p>
+            {fileUrl && <img src={fileUrl} alt="Preview" className="w-full h-auto" />}
           </div>
           <div className="flex justify-end">
             <button
