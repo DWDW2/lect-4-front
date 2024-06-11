@@ -1,8 +1,9 @@
 'use client'
-import { useQuery } from "react-query";
+import { QueryClient, useQuery } from "react-query";
 import { getAllProducts } from "./api/services/productsService";
 import { Media } from "./components/Skeleton";
 import { ProductsList } from "../components/products-list";
+import { ButtonAdd } from "@/components/button-add";
 
 
 export default function Home() {
@@ -23,6 +24,7 @@ export default function Home() {
   return (
     <div>
       <ProductsList data={data}/>
+      <ButtonAdd />
     </div>    
   );
   }
